@@ -1,5 +1,6 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { UsageStats } from '../types/usage';
 import { Button } from './ui/button';
 
@@ -15,6 +16,7 @@ interface TerminalViewProps {
 }
 
 export const TerminalView: React.FC<TerminalViewProps> = ({ stats, onRefresh, preferences }) => {
+  const { t } = useTranslation();
   const [animatedPercentage, setAnimatedPercentage] = useState(0);
   const [animatedTimeProgress, setAnimatedTimeProgress] = useState(0);
 
@@ -35,7 +37,7 @@ export const TerminalView: React.FC<TerminalViewProps> = ({ stats, onRefresh, pr
   };
 
   const formatTimeUntilReset = (): string => {
-    if (!stats.resetInfo?.timeUntilReset) return 'No reset info';
+    if (!stats.resetInfo?.timeUntilReset) return t('terminal.noResetInfo');
     const milliseconds = stats.resetInfo.timeUntilReset;
     const hours = Math.floor(milliseconds / (1000 * 60 * 60));
     const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
@@ -69,16 +71,16 @@ export const TerminalView: React.FC<TerminalViewProps> = ({ stats, onRefresh, pr
 
     if (selectedPlan === 'auto') {
       return {
-        plan: `Auto-detect (${stats.currentPlan})`,
-        label: 'detected',
+        plan: `${t('terminal.autoDetect')} (${stats.currentPlan})`,
+        label: t('terminal.detected'),
       };
     }
 
     if (selectedPlan === 'Custom') {
       const tokenLimit = preferences.customTokenLimit || stats.tokenLimit;
       return {
-        plan: `Custom (${formatNumber(tokenLimit)})`,
-        label: 'selected',
+        plan: `${t('terminal.customPlan')} (${formatNumber(tokenLimit)})`,
+        label: t('terminal.selected'),
       };
     }
 
@@ -91,7 +93,7 @@ export const TerminalView: React.FC<TerminalViewProps> = ({ stats, onRefresh, pr
 
     return {
       plan: `Claude ${selectedPlan} (${tokenLimits[selectedPlan as keyof typeof tokenLimits]})`,
-      label: 'selected',
+      label: t('terminal.selected'),
     };
   };
 
@@ -113,17 +115,17 @@ export const TerminalView: React.FC<TerminalViewProps> = ({ stats, onRefresh, pr
       <div className="border-b border-green-500/30 pb-4">
         <div className="flex items-center justify-between">
           <div className="text-green-400">
-            <span className="text-green-500">┌─</span> Claude Code Usage Monitor{' '}
+            <span className="text-green-500">┌─</span> {t('terminal.title')}{' '}
             <span className="text-green-500">─┐</span>
           </div>
           <div className="text-green-300 text-xs">{new Date().toLocaleTimeString()}</div>
         </div>
-        <div className="text-green-500 text-xs mt-1">└─ Real-time terminal interface ─┘</div>
+        <div className="text-green-500 text-xs mt-1">└─ {t('terminal.subtitle')} ─┘</div>
       </div>
       {/* Token Usage Section */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <span className="text-green-400">TOKEN USAGE:</span>
+          <span className="text-green-400">{t('terminal.tokenUsage')}</span>
           <span className="text-white font-bold">{animatedPercentage.toFixed(1)}%</span>
           <span className="text-2xl">{getStatusEmoji()}</span>
         </div>
@@ -143,7 +145,7 @@ export const TerminalView: React.FC<TerminalViewProps> = ({ stats, onRefresh, pr
       {/* TODO: Time Progress Section */}
       {/* <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <span className="text-blue-400">TIME PROGRESS:</span>
+          <span className="text-blue-400">{t('terminal.timeProgress')}</span>
           <span className="text-white font-bold">{getTimeProgress().toFixed(1)}%</span>
           <span className="text-2xl">⏰</span>
         </div>
@@ -154,23 +156,23 @@ export const TerminalView: React.FC<TerminalViewProps> = ({ stats, onRefresh, pr
             {generateTimeProgressBar(animatedTimeProgress)}
           </span>
           <span className="text-blue-500">]</span>
-          <span className="text-gray-400 text-xs">{formatTimeUntilReset()} until reset</span>
+          <span className="text-gray-400 text-xs">{formatTimeUntilReset()} {t('terminal.untilReset')}</span>
         </div>
       </div> */}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-4 pt-2 border-t border-green-500/20">
         <div className="space-y-1">
-          <div className="text-orange-400 text-xs">BURN RATE:</div>
+          <div className="text-orange-400 text-xs">{t('terminal.burnRate')}</div>
           <div className="flex items-center gap-2">
             <span className="text-white font-bold">{formatNumber(stats.burnRate)}</span>
-            <span className="text-gray-400 text-xs">tokens/hr</span>
+            <span className="text-gray-400 text-xs">{t('terminal.tokensPerHr')}</span>
             <span className="text-lg">{getBurnRateEmoji()}</span>
           </div>
         </div>
 
         <div className="space-y-1">
-          <div className="text-purple-400 text-xs">PLAN:</div>
+          <div className="text-purple-400 text-xs">{t('terminal.planLabel')}</div>
           <div className="flex items-center gap-2">
             <span className="text-white font-bold">{formatPlanDisplay().plan}</span>
             <span className="text-gray-400 text-xs">{formatPlanDisplay().label}</span>
@@ -179,19 +181,19 @@ export const TerminalView: React.FC<TerminalViewProps> = ({ stats, onRefresh, pr
         </div>
 
         <div className="space-y-1">
-          <div className="text-red-400 text-xs">COST TODAY:</div>
+          <div className="text-red-400 text-xs">{t('terminal.costToday')}</div>
           <div className="flex items-center gap-2">
             <span className="text-white font-bold">${stats.today.totalCost.toFixed(3)}</span>
-            <span className="text-gray-400 text-xs">USD</span>
+            <span className="text-gray-400 text-xs">{t('terminal.usd')}</span>
             <span className="text-lg">💰</span>
           </div>
         </div>
 
         <div className="space-y-1">
-          <div className="text-yellow-400 text-xs">REMAINING:</div>
+          <div className="text-yellow-400 text-xs">{t('terminal.remainingLabel')}</div>
           <div className="flex items-center gap-2">
             <span className="text-white font-bold">{formatNumber(stats.tokensRemaining)}</span>
-            <span className="text-gray-400 text-xs">tokens</span>
+            <span className="text-gray-400 text-xs">{t('terminal.tokensUnit')}</span>
             <span className="text-lg">📈</span>
           </div>
         </div>
@@ -199,14 +201,14 @@ export const TerminalView: React.FC<TerminalViewProps> = ({ stats, onRefresh, pr
       {/* Session Information */}
       {stats.sessionTracking && (
         <div className="pt-2 border-t border-green-500/20">
-          <div className="text-cyan-400 text-xs mb-2">SESSION WINDOW (5H):</div>
+          <div className="text-cyan-400 text-xs mb-2">{t('terminal.sessionWindow')}</div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <div className="text-gray-400 text-xs">Active Sessions:</div>
-              <div className="text-white">{stats.sessionTracking.sessionsInWindow} sessions</div>
+              <div className="text-gray-400 text-xs">{t('terminal.activeSessions')}</div>
+              <div className="text-white">{stats.sessionTracking.sessionsInWindow} {t('terminal.sessionsUnit')}</div>
             </div>
             <div className="space-y-1">
-              <div className="text-gray-400 text-xs">Window Tokens:</div>
+              <div className="text-gray-400 text-xs">{t('terminal.windowTokens')}</div>
               <div className="text-white">
                 {formatNumber(stats.sessionTracking.activeWindow.totalTokens)}
               </div>
@@ -217,10 +219,10 @@ export const TerminalView: React.FC<TerminalViewProps> = ({ stats, onRefresh, pr
       {/* Velocity Information */}
       {stats.velocity && (
         <div className="pt-2 border-t border-green-500/20">
-          <div className="text-pink-400 text-xs mb-2">VELOCITY ANALYSIS:</div>
+          <div className="text-pink-400 text-xs mb-2">{t('terminal.velocityAnalysis')}</div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-gray-400 text-xs">Trend:</span>
+              <span className="text-gray-400 text-xs">{t('terminal.trendLabel')}</span>
               <span className="text-white">
                 {stats.velocity.trend === 'increasing'
                   ? '📈'
@@ -231,7 +233,7 @@ export const TerminalView: React.FC<TerminalViewProps> = ({ stats, onRefresh, pr
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-gray-400 text-xs">Change:</span>
+              <span className="text-gray-400 text-xs">{t('terminal.changeLabel')}</span>
               <span
                 className={`text-sm ${
                   stats.velocity.trendPercent > 0
@@ -259,12 +261,12 @@ export const TerminalView: React.FC<TerminalViewProps> = ({ stats, onRefresh, pr
             size="sm"
             className="h-auto p-0 text-yellow-400 hover:text-yellow-300 hover:bg-transparent transition-colors"
           >
-            refresh
+            {t('terminal.refresh')}
           </Button>
           <span className="text-gray-600">|</span>
-          <span className="text-blue-400">status</span>
+          <span className="text-blue-400">{t('terminal.statusCmd')}</span>
           <span className="text-gray-600">|</span>
-          <span className="text-purple-400">analytics</span>
+          <span className="text-purple-400">{t('terminal.analyticsCmd')}</span>
           <span className="animate-pulse text-green-400 ml-2">█</span>
         </div>
       </div>
@@ -272,14 +274,14 @@ export const TerminalView: React.FC<TerminalViewProps> = ({ stats, onRefresh, pr
       <div className="text-xs text-gray-500 pt-2 border-t border-gray-700">
         <div className="flex justify-between">
           <span>
-            System:{' '}
+            {t('terminal.system')}{' '}
             {stats.percentageUsed >= 90
-              ? 'CRITICAL'
+              ? t('terminal.criticalStatus')
               : stats.percentageUsed >= 70
-                ? 'WARNING'
-                : 'NORMAL'}
+                ? t('terminal.warningStatus')
+                : t('terminal.normalStatus')}
           </span>
-          <span>Uptime: {new Date().toLocaleTimeString()}</span>
+          <span>{t('terminal.uptime')} {new Date().toLocaleTimeString()}</span>
         </div>
       </div>
     </div>

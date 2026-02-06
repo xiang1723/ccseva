@@ -1,4 +1,5 @@
 import type React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 
 type ViewType = 'dashboard' | 'live' | 'analytics' | 'terminal' | 'settings';
@@ -53,28 +54,28 @@ const SettingsIcon = () => (
   </svg>
 );
 
-const tabs = [
+const getTabs = (t: (key: string) => string) => [
   {
     id: 'dashboard' as ViewType,
-    name: 'Dashboard',
+    name: t('navigation.dashboard'),
     icon: DashboardIcon,
     description: 'Overview and quick stats',
   },
   {
     id: 'analytics' as ViewType,
-    name: 'Analytics',
+    name: t('navigation.analytics'),
     icon: AnalyticsIcon,
     description: 'Usage trends and insights',
   },
   {
     id: 'terminal' as ViewType,
-    name: 'Terminal',
+    name: t('navigation.terminal'),
     icon: TerminalIcon,
     description: 'Terminal-style interface',
   },
   {
     id: 'settings' as ViewType,
-    name: 'Settings',
+    name: t('navigation.settings'),
     icon: SettingsIcon,
     description: 'Application settings',
   },
@@ -85,6 +86,9 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
   onNavigate,
   className = '',
 }) => {
+  const { t } = useTranslation();
+  const tabs = getTabs(t);
+
   return (
     <Tabs
       value={currentView}

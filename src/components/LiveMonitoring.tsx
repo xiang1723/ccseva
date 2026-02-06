@@ -1,5 +1,6 @@
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { UsageStats } from '../types/usage';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -115,6 +116,7 @@ interface LogEntry {
 }
 
 export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({ stats, onRefresh }) => {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isLiveMode, setIsLiveMode] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -150,7 +152,7 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({ stats, onRefresh
     intervalRef.current = setInterval(() => {
       onRefresh();
       setLastUpdate(new Date());
-      addLogEntry('info', 'Data refreshed', '🔄');
+      addLogEntry('info', t('live.dataRefreshed'), '🔄');
     }, 3000);
 
     return () => {
@@ -158,22 +160,22 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({ stats, onRefresh
         clearInterval(intervalRef.current);
       }
     };
-  }, [isLiveMode, onRefresh, addLogEntry]);
+  }, [isLiveMode, onRefresh, addLogEntry, t]);
 
   // Add status-based log entries
   useEffect(() => {
     const timeUntilReset = stats.resetInfo?.timeUntilReset;
 
     if (stats.percentageUsed >= 95) {
-      addLogEntry('error', `Critical: ${stats.percentageUsed.toFixed(1)}% usage detected`, '🚨');
+      addLogEntry('error', t('live.criticalUsage', { percentage: stats.percentageUsed.toFixed(1) }), '🚨');
     } else if (stats.percentageUsed >= 80) {
-      addLogEntry('warning', `High usage: ${stats.percentageUsed.toFixed(1)}%`, '⚠️');
+      addLogEntry('warning', t('live.highUsage', { percentage: stats.percentageUsed.toFixed(1) }), '⚠️');
     }
 
     if (timeUntilReset && timeUntilReset < 3600000) {
-      addLogEntry('info', `Reset in ${formatTimeRemaining(timeUntilReset)}`, '⏰');
+      addLogEntry('info', t('live.resetIn', { time: formatTimeRemaining(timeUntilReset) }), '⏰');
     }
-  }, [stats.percentageUsed, stats.resetInfo?.timeUntilReset, addLogEntry]);
+  }, [stats.percentageUsed, stats.resetInfo?.timeUntilReset, addLogEntry, t]);
 
   const currentStatus = getUsageStatus(stats.percentageUsed);
   const tokensPercentage = Math.min(stats.percentageUsed, 100);
@@ -197,8 +199,8 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({ stats, onRefresh
         <CardContent className="p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-xl font-bold text-gradient mb-1">Live Monitoring</h2>
-              <p className="text-sm text-neutral-400">Real-time terminal-style usage tracking</p>
+              <h2 className="text-xl font-bold text-gradient mb-1">{t('live.title')}</h2>
+              <p className="text-sm text-neutral-400">{t('live.description')}</p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -207,7 +209,7 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({ stats, onRefresh
                   <div
                     className={`w-2 h-2 rounded-full ${isLiveMode ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`}
                   />
-                  <span className="text-xs text-neutral-300">{isLiveMode ? 'LIVE' : 'PAUSED'}</span>
+                  <span className="text-xs text-neutral-300">{isLiveMode ? t('live.liveStatus') : t('live.pausedStatus')}</span>
                 </div>
               </div>
 
@@ -221,7 +223,7 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({ stats, onRefresh
                     : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/20'
                 }`}
               >
-                {isLiveMode ? 'Pause' : 'Resume'}
+                {isLiveMode ? t('live.pause') : t('live.resume')}
               </Button>
             </div>
           </div>
@@ -229,7 +231,7 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({ stats, onRefresh
           {/* Status Overview */}
           <div className="grid grid-cols-2 gap-4">
             <StatusCard
-              title="Token Usage"
+              title={t('live.tokenUsage')}
               emoji={getStatusEmoji(currentStatus)}
               value={`${tokensPercentage.toFixed(1)}%`}
               progress={tokensPercentage}
@@ -238,12 +240,12 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({ stats, onRefresh
             />
 
             <StatusCard
-              title="Time Progress"
+              title={t('live.timeProgress')}
               emoji="⏰"
               value={`${timeProgress.toFixed(1)}%`}
               progress={timeProgress}
               colorClass="from-blue-500 to-purple-500"
-              subtitle={`${stats.resetInfo ? formatTimeRemaining(stats.resetInfo.timeUntilReset) : 'No reset info'} until reset`}
+              subtitle={`${stats.resetInfo ? formatTimeRemaining(stats.resetInfo.timeUntilReset) : t('live.noResetInfo')} ${t('live.untilReset')}`}
             />
           </div>
         </CardContent>
@@ -254,7 +256,7 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({ stats, onRefresh
         <CardContent className="p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <h3 className="text-lg font-bold text-white">Live Feed</h3>
+              <h3 className="text-lg font-bold text-white">{t('live.liveFeed')}</h3>
               <div className="flex gap-1">
                 <div className="w-3 h-3 bg-red-500 rounded-full" />
                 <div className="w-3 h-3 bg-yellow-500 rounded-full" />
@@ -263,7 +265,7 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({ stats, onRefresh
             </div>
 
             <div className="text-xs text-neutral-400">
-              Last update: {lastUpdate.toLocaleTimeString()}
+              {t('live.lastUpdate')} {lastUpdate.toLocaleTimeString()}
             </div>
           </div>
 
@@ -281,7 +283,7 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({ stats, onRefresh
             >
               {logs.length === 0 ? (
                 <div className="text-neutral-400">
-                  <span className="text-green-400">$</span> Waiting for events...
+                  <span className="text-green-400">$</span> {t('live.waitingForEvents')}
                 </div>
               ) : (
                 logs.map((log) => <LogEntryComponent key={log.id} log={log} />)
@@ -302,7 +304,7 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({ stats, onRefresh
       {/* Current Session Info */}
       <Card className="bg-neutral-900/80 backdrop-blur-sm border-neutral-800">
         <CardHeader>
-          <CardTitle className="text-white">Current Session</CardTitle>
+          <CardTitle className="text-white">{t('live.currentSession')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -310,16 +312,16 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({ stats, onRefresh
               <div className="text-2xl font-bold text-white mb-1">
                 {formatNumber(stats.burnRate)}
               </div>
-              <div className="text-sm text-neutral-400">Tokens/Hour</div>
+              <div className="text-sm text-neutral-400">{t('live.tokensPerHour')}</div>
               <div className="text-xs text-neutral-500 mt-1">
-                🔥 {stats.burnRate > 1000 ? 'High' : stats.burnRate > 500 ? 'Moderate' : 'Normal'}
+                🔥 {stats.burnRate > 1000 ? t('live.high') : stats.burnRate > 500 ? t('live.moderate') : t('live.normal')}
               </div>
             </div>
 
             <div className="text-center">
               <div className="text-2xl font-bold text-white mb-1">{stats.currentPlan}</div>
-              <div className="text-sm text-neutral-400">Current Plan</div>
-              <div className="text-xs text-neutral-500 mt-1">📊 Auto-detected</div>
+              <div className="text-sm text-neutral-400">{t('live.currentPlan')}</div>
+              <div className="text-xs text-neutral-500 mt-1">📊 {t('live.autoDetected')}</div>
             </div>
 
             <div className="text-center">
@@ -330,9 +332,9 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({ stats, onRefresh
                     ? '📉'
                     : '➡️'}
               </div>
-              <div className="text-sm text-neutral-400">Trend</div>
+              <div className="text-sm text-neutral-400">{t('live.trend')}</div>
               <div className="text-xs text-neutral-500 mt-1">
-                {stats.velocity?.trend || 'stable'}
+                {stats.velocity?.trend || t('live.stable')}
               </div>
             </div>
 
@@ -340,8 +342,8 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({ stats, onRefresh
               <div className="text-2xl font-bold text-white mb-1">
                 {stats.prediction?.confidence || 0}%
               </div>
-              <div className="text-sm text-neutral-400">Confidence</div>
-              <div className="text-xs text-neutral-500 mt-1">🎯 Prediction</div>
+              <div className="text-sm text-neutral-400">{t('live.confidence')}</div>
+              <div className="text-xs text-neutral-500 mt-1">🎯 {t('live.prediction')}</div>
             </div>
           </div>
         </CardContent>
@@ -357,16 +359,16 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({ stats, onRefresh
               className="flex items-center justify-center gap-2 py-3 h-auto hover:bg-white/10 transition-all duration-200"
             >
               <span>🔄</span>
-              Force Refresh
+              {t('live.forceRefresh')}
             </Button>
 
             <Button
-              onClick={() => addLogEntry('info', 'Manual checkpoint created', '📍')}
+              onClick={() => addLogEntry('info', t('live.checkpointCreated'), '📍')}
               variant="ghost"
               className="flex items-center justify-center gap-2 py-3 h-auto hover:bg-white/10 transition-all duration-200"
             >
               <span>📍</span>
-              Checkpoint
+              {t('live.checkpoint')}
             </Button>
 
             <Button
@@ -375,7 +377,7 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({ stats, onRefresh
               className="flex items-center justify-center gap-2 py-3 h-auto hover:bg-white/10 transition-all duration-200"
             >
               <span>🗑️</span>
-              Clear Logs
+              {t('live.clearLogs')}
             </Button>
           </div>
         </CardContent>

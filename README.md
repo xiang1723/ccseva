@@ -22,6 +22,7 @@ A beautiful macOS menu bar app for tracking your Claude Code usage in real-time.
 - **Usage analytics** - 7-day charts, model breakdowns, and trend analysis
 - **Smart notifications** - Alerts at 70% and 90% thresholds with cooldown
 - **Cost tracking** - Daily cost estimates and burn rate calculations
+- **Multi-language support** - Full internationalization with English and Chinese (简体中文)
 - **Beautiful UI** - Gradient design with glass morphism effects
 
 ## Installation
@@ -50,8 +51,13 @@ npm run electron-dev  # Hot reload development
 1. **Launch** - CCSeva appears in your menu bar
 2. **Click** - View detailed usage statistics
 3. **Right-click** - Access refresh and quit options
+4. **Settings** - Configure language preferences (English/中文), timezone, and plan settings
 
 The app automatically detects your Claude Code configuration from `~/.claude` directory and updates every 30 seconds.
+
+### Language Settings
+
+Switch between English and Chinese (简体中文) in Settings → Language. The interface adapts instantly with no restart required.
 
 ## Requirements
 
@@ -76,3 +82,8 @@ Built with ❤️ using [Electron](https://electronjs.org), [React](https://reac
 ---
 
 **Note**: This is an unofficial tool for tracking Claude Code usage. Requires valid Claude Code installation and configuration.
+
+## Documentation
+
+- [English](README.md)
+- [简体中文](README.zh-CN.md)

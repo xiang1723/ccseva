@@ -1,4 +1,5 @@
 import type React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { UsageStats } from '../types/usage';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -19,8 +20,9 @@ const ModelUsageItem = ({
   totalTokens: number;
   index: number;
 }) => {
+  const { t } = useTranslation();
   const percentage = totalTokens > 0 ? (modelData.tokens / totalTokens) * 100 : 0;
-  const formatNumber = (num: number) => {
+  const formatNum = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
     return num.toLocaleString();
@@ -43,16 +45,16 @@ const ModelUsageItem = ({
               <div className="text-center">
                 <p className="font-semibold">{modelName}</p>
                 <p className="text-sm mt-1">
-                  {formatNumber(modelData.tokens)} tokens • {formatCurrency(modelData.cost)}
+                  {formatNum(modelData.tokens)} {t('dashboard.tokensUnit')} • {formatCurrency(modelData.cost)}
                 </p>
                 <p className="text-xs mt-1 text-muted-foreground">
-                  {percentage.toFixed(1)}% of today's usage
+                  {t('dashboard.ofTodayUsage', { percentage: percentage.toFixed(1) })}
                 </p>
               </div>
             </TooltipContent>
           </Tooltip>
           <span className="text-sm text-neutral-400">
-            {formatNumber(modelData.tokens)} ({percentage.toFixed(1)}%)
+            {formatNum(modelData.tokens)} ({percentage.toFixed(1)}%)
           </span>
         </div>
         <Progress value={percentage} className="w-full h-1.5" />
@@ -108,7 +110,8 @@ const getStatusHelpers = (status: 'safe' | 'warning' | 'critical') => {
 const KeyMetricsRow: React.FC<{
   stats: UsageStats;
 }> = ({ stats }) => {
-  const timeRemaining = stats.actualResetInfo?.formattedTimeRemaining || 'No active session';
+  const { t } = useTranslation();
+  const timeRemaining = stats.actualResetInfo?.formattedTimeRemaining || t('dashboard.noActiveSession');
 
   return (
     <div className="grid grid-cols-3 gap-4 text-center">
@@ -116,9 +119,9 @@ const KeyMetricsRow: React.FC<{
         <div className="text-2xl font-bold text-neutral-100 font-primary">
           {formatNumber(stats.tokensUsed)}
         </div>
-        <div className="text-sm text-neutral-400 font-primary">Tokens Used</div>
+        <div className="text-sm text-neutral-400 font-primary">{t('dashboard.tokensUsed')}</div>
         <div className="text-xs text-neutral-500 font-primary">
-          of {formatNumber(stats.tokenLimit)}
+          {t('dashboard.ofLimit', { limit: formatNumber(stats.tokenLimit) })}
         </div>
       </div>
 
@@ -126,9 +129,9 @@ const KeyMetricsRow: React.FC<{
         <div className="text-2xl font-bold text-neutral-100 font-primary">
           {formatCurrency(stats.today.totalCost)}
         </div>
-        <div className="text-sm text-neutral-warm-400 font-primary">Cost Today</div>
+        <div className="text-sm text-neutral-warm-400 font-primary">{t('dashboard.costToday')}</div>
         <div className="text-xs text-neutral-500 font-primary">
-          {stats.today.totalTokens.toLocaleString()} tokens
+          {stats.today.totalTokens.toLocaleString()} {t('dashboard.tokensUnit')}
         </div>
       </div>
 
@@ -136,7 +139,7 @@ const KeyMetricsRow: React.FC<{
         <div className="text-2xl font-bold text-neutral-100 font-primary">
           {formatNumber(stats.tokensRemaining)}
         </div>
-        <div className="text-sm text-neutral-warm-400 font-primary">Remaining</div>
+        <div className="text-sm text-neutral-warm-400 font-primary">{t('dashboard.remaining')}</div>
         <div className="text-xs text-neutral-500 font-primary">{timeRemaining}</div>
       </div>
     </div>
@@ -226,6 +229,7 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ stats, status }) => {
+  const { t } = useTranslation();
   const { getStatusColor, getStatusIcon } = getStatusHelpers(status);
 
   return (
@@ -235,9 +239,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, status }) => {
         <Card className="bg-neutral-900/80 backdrop-blur-sm border-neutral-800">
           <CardContent className="p-6">
             <div className="mb-6">
-              <h2 className="text-xl font-bold text-gradient mb-2 font-primary">Usage Dashboard</h2>
+              <h2 className="text-xl font-bold text-gradient mb-2 font-primary">{t('dashboard.title')}</h2>
               <p className="text-neutral-400 text-sm font-primary">
-                Real-time monitoring of your Claude API usage
+                {t('dashboard.description')}
               </p>
             </div>
 
@@ -249,8 +253,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, status }) => {
                     <CircularProgressChart
                       percentage={stats.percentageUsed}
                       status={status}
-                      label="Tokens"
-                      subtitle={status}
+                      label={t('dashboard.tokens')}
+                      subtitle={t(`status.${status}`)}
                       emoji={getStatusIcon()}
                     />
                   </div>
@@ -259,17 +263,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, status }) => {
                   <div className="text-center">
                     <p className="font-semibold">
                       {status === 'critical'
-                        ? '🔴 Critical Usage'
+                        ? `🔴 ${t('dashboard.criticalUsage')}`
                         : status === 'warning'
-                          ? '🟡 Warning Level'
-                          : '🟢 Safe Usage'}
+                          ? `🟡 ${t('dashboard.warningLevel')}`
+                          : `🟢 ${t('dashboard.safeUsage')}`}
                     </p>
                     <p className="text-sm mt-1">
                       {status === 'critical'
-                        ? 'Over 90% of daily limit used'
+                        ? t('dashboard.criticalTooltip')
                         : status === 'warning'
-                          ? '70-90% of daily limit used'
-                          : 'Less than 70% of daily limit used'}
+                          ? t('dashboard.warningTooltip')
+                          : t('dashboard.safeTooltip')}
                     </p>
                   </div>
                 </TooltipContent>
@@ -312,18 +316,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, status }) => {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>
-                        Your detected Claude plan based on daily token limit:{' '}
-                        {formatNumber(stats.tokenLimit)} tokens/day
+                        {t('dashboard.planTooltip', { limit: formatNumber(stats.tokenLimit) })}
                       </p>
                     </TooltipContent>
                   </Tooltip>
-                  <p className="text-sm text-neutral-400 font-primary">Current Plan</p>
+                  <p className="text-sm text-neutral-400 font-primary">{t('dashboard.currentPlan')}</p>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-neutral-400 font-primary">Daily Limit</span>
+                  <span className="text-neutral-400 font-primary">{t('dashboard.dailyLimit')}</span>
                   <span className="text-neutral-100 font-medium font-primary">
                     {formatNumber(stats.tokenLimit)}
                   </span>
@@ -360,18 +363,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, status }) => {
                       </h3>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Rate of token consumption per hour based on your last 24 hours of usage</p>
+                      <p>{t('dashboard.burnRateTooltip')}</p>
                     </TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <p className="text-sm text-neutral-400 font-primary cursor-help">
-                        Tokens/Hour
+                        {t('dashboard.tokensPerHour')}
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>
-                        Current burn rate - how fast you're consuming your daily token allowance
+                        {t('dashboard.burnRateDescription')}
                       </p>
                     </TooltipContent>
                   </Tooltip>
@@ -383,17 +386,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, status }) => {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className="text-neutral-400 font-primary cursor-help">
-                        Depletion Time
+                        {t('dashboard.depletionTime')}
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>
-                        Estimated time until your daily token limit is reached at current usage rate
+                        {t('dashboard.depletionTooltip')}
                       </p>
                     </TooltipContent>
                   </Tooltip>
                   <span className="text-neutral-100 font-medium font-primary">
-                    {stats.actualResetInfo?.formattedTimeRemaining || 'No active session'}
+                    {stats.actualResetInfo?.formattedTimeRemaining || t('dashboard.noActiveSession')}
                   </span>
                 </div>
                 <Badge
@@ -407,10 +410,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, status }) => {
                   className="w-full justify-center"
                 >
                   {stats.burnRate > 1000
-                    ? 'High Usage'
+                    ? t('dashboard.highUsage')
                     : stats.burnRate > 500
-                      ? 'Moderate Usage'
-                      : 'Normal Usage'}
+                      ? t('dashboard.moderateUsage')
+                      : t('dashboard.normalUsage')}
                 </Badge>
               </div>
             </CardContent>
@@ -436,26 +439,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, status }) => {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Today</h3>
-                  <p className="text-sm text-neutral-400">Usage Summary</p>
+                  <h3 className="text-lg font-bold text-white">{t('dashboard.today')}</h3>
+                  <p className="text-sm text-neutral-400">{t('dashboard.usageSummary')}</p>
                 </div>
               </div>
 
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-neutral-400">Tokens</span>
+                  <span className="text-neutral-400">{t('dashboard.tokens')}</span>
                   <span className="text-white font-medium">
                     {stats.today.totalTokens.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-neutral-400">Cost</span>
+                  <span className="text-neutral-400">{t('dashboard.cost')}</span>
                   <span className="text-white font-medium">
                     {formatCurrency(stats.today.totalCost)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-neutral-400">Models</span>
+                  <span className="text-neutral-400">{t('dashboard.models')}</span>
                   <span className="text-white font-medium">
                     {Object.keys(stats.today.models).length}
                   </span>
@@ -484,26 +487,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, status }) => {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">This Week</h3>
-                  <p className="text-sm text-neutral-400">7-Day Summary</p>
+                  <h3 className="text-lg font-bold text-white">{t('dashboard.thisWeek')}</h3>
+                  <p className="text-sm text-neutral-400">{t('dashboard.sevenDaySummary')}</p>
                 </div>
               </div>
 
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-neutral-400">Total Cost</span>
+                  <span className="text-neutral-400">{t('dashboard.totalCost')}</span>
                   <span className="text-white font-medium">
                     {formatCurrency(stats.thisWeek.reduce((sum, day) => sum + day.totalCost, 0))}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-neutral-400">Total Tokens</span>
+                  <span className="text-neutral-400">{t('dashboard.totalTokens')}</span>
                   <span className="text-white font-medium">
                     {stats.thisWeek.reduce((sum, day) => sum + day.totalTokens, 0).toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-neutral-400">Avg Daily</span>
+                  <span className="text-neutral-400">{t('dashboard.avgDaily')}</span>
                   <span className="text-white font-medium">
                     {formatCurrency(
                       stats.thisWeek.reduce((sum, day) => sum + day.totalCost, 0) / 7
@@ -520,8 +523,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, status }) => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-white">Model Usage</CardTitle>
-                <CardDescription>Today's distribution by model</CardDescription>
+                <CardTitle className="text-white">{t('dashboard.modelUsage')}</CardTitle>
+                <CardDescription>{t('dashboard.modelDistribution')}</CardDescription>
               </div>
               <Popover>
                 <PopoverTrigger asChild>
@@ -542,24 +545,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, status }) => {
                 </PopoverTrigger>
                 <PopoverContent className="w-80 bg-neutral-800 border-neutral-700 text-white">
                   <div className="space-y-3">
-                    <div className="font-semibold">Model Usage Breakdown</div>
+                    <div className="font-semibold">{t('dashboard.modelBreakdown')}</div>
                     <div className="text-sm text-neutral-300 space-y-2">
-                      <p>
-                        • <strong>Tokens:</strong> Number of tokens consumed by each model today
-                      </p>
-                      <p>
-                        • <strong>Cost:</strong> Estimated cost based on model pricing
-                      </p>
-                      <p>
-                        • <strong>Percentage:</strong> Share of your total daily usage
-                      </p>
-                      <p>
-                        • <strong>Colors:</strong> Purple (primary), Blue (secondary), Green
-                        (tertiary)
-                      </p>
+                      <p>• {t('dashboard.modelTokensInfo')}</p>
+                      <p>• {t('dashboard.modelCostInfo')}</p>
+                      <p>• {t('dashboard.modelPercentageInfo')}</p>
+                      <p>• {t('dashboard.modelColorsInfo')}</p>
                     </div>
                     <div className="text-xs text-neutral-400 border-t border-neutral-700 pt-2">
-                      Click on any model name for detailed tooltip information
+                      {t('dashboard.modelClickInfo')}
                     </div>
                   </div>
                 </PopoverContent>
@@ -593,33 +587,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, status }) => {
                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                     />
                   </svg>
-                  <p className="text-sm">No model usage data available</p>
+                  <p className="text-sm">{t('dashboard.noModelData')}</p>
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
-
-        {/* Quick Actions */}
-        {/* <div className="glass-card p-4">
-        <h3 className="text-lg font-bold text-white mb-4">Quick Actions</h3>
-        
-        <div className="grid grid-cols-2 gap-3">
-          <button className="btn btn-ghost flex items-center justify-center gap-2 py-3">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            View Analytics
-          </button>
-          
-          <button className="btn btn-ghost flex items-center justify-center gap-2 py-3">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Export Data
-          </button>
-        </div>
-      </div> */}
       </div>
     </TooltipProvider>
   );

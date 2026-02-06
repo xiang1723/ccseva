@@ -1,5 +1,6 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { UsageStats } from '../types/usage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -22,6 +23,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onUpdatePreferences,
   stats,
 }) => {
+  const { t } = useTranslation();
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const handlePreferenceChange = (key: string, value: boolean | number | string) => {
@@ -40,7 +42,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   // Calculate real-time countdown
   const getRealtimeCountdown = () => {
     if (!stats.actualResetInfo?.nextResetTime) {
-      return 'Not available';
+      return t('settingsPanel.notAvailable');
     }
 
     const now = currentTime;
@@ -48,19 +50,19 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     const timeUntilReset = Math.max(0, resetTime.getTime() - now.getTime());
 
     if (timeUntilReset <= 0) {
-      return 'Reset available';
+      return t('settingsPanel.resetAvailable');
     }
 
     const hours = Math.floor(timeUntilReset / (1000 * 60 * 60));
     const minutes = Math.floor((timeUntilReset % (1000 * 60 * 60)) / (1000 * 60));
 
     if (hours > 0) {
-      return `${hours} hours ${minutes} minutes left`;
+      return t('settingsPanel.hoursMinutesLeft', { hours, minutes });
     }
     if (minutes > 0) {
-      return `${minutes} minutes left`;
+      return t('settingsPanel.minutesLeft', { minutes });
     }
-    return 'Less than 1 minute left';
+    return t('settingsPanel.lessThanOneMinute');
   };
 
   return (
@@ -68,9 +70,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
       {/* Header */}
       <Card className="bg-neutral-900/80 backdrop-blur-sm border-neutral-800">
         <CardHeader>
-          <CardTitle className="text-white text-2xl">Settings</CardTitle>
+          <CardTitle className="text-white text-2xl">{t('settingsPanel.title')}</CardTitle>
           <CardDescription className="text-white/70">
-            Customize your CCSeva experience
+            {t('settingsPanel.description')}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -83,9 +85,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <div className="flex items-center space-x-3">
               <span className="text-2xl">🌍</span>
               <div>
-                <div className="text-white font-medium">Timezone</div>
+                <div className="text-white font-medium">{t('settingsPanel.timezone')}</div>
                 <div className="text-white/60 text-sm">
-                  Auto-detected from your system for accurate reset times
+                  {t('settingsPanel.timezoneDescription')}
                 </div>
               </div>
             </div>
@@ -95,14 +97,14 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <div className="text-white text-sm font-medium">
                   {preferences.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone}
                 </div>
-                <div className="text-white/50 text-xs mt-1">Auto-detected from system</div>
+                <div className="text-white/50 text-xs mt-1">{t('settingsPanel.autoDetectedFromSystem')}</div>
               </div>
 
               <div className="space-y-3">
                 <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
                   <div className="text-blue-300 text-sm">
                     <span className="text-lg mr-2">⏱️</span>
-                    <span className="font-medium">Next reset: </span>
+                    <span className="font-medium">{t('settingsPanel.nextReset')} </span>
                     <span className="text-blue-200 font-mono">{getRealtimeCountdown()}</span>
                   </div>
                 </div>
@@ -111,7 +113,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
                     <div className="text-yellow-300 text-sm">
                       <span className="text-lg mr-2">⚠️</span>
-                      Using estimated reset time:{' '}
+                      {t('settingsPanel.usingEstimatedResetTime')}{' '}
                       {stats.resetInfo
                         ? new Date(stats.resetInfo.nextResetTime).toLocaleString([], {
                             timeZone:
@@ -122,7 +124,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                             hour: '2-digit',
                             minute: '2-digit',
                           })
-                        : 'Not available'}
+                        : t('settingsPanel.notAvailable')}
                     </div>
                   </div>
                 )}
@@ -135,16 +137,16 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <div className="flex items-center space-x-3">
               <span className="text-2xl">🤖</span>
               <div>
-                <div className="text-white font-medium">Claude Plan</div>
+                <div className="text-white font-medium">{t('settingsPanel.claudePlan')}</div>
                 <div className="text-white/60 text-sm">
-                  Select your Claude subscription plan for accurate token limits
+                  {t('settingsPanel.claudePlanDescription')}
                 </div>
               </div>
             </div>
 
             <div className="ml-11 space-y-3">
               <div>
-                <div className="text-white/70 text-sm mb-2">Plan Selection</div>
+                <div className="text-white/70 text-sm mb-2">{t('settingsPanel.planSelection')}</div>
                 <Select
                   value={preferences.plan || 'auto'}
                   onValueChange={(value) =>
@@ -158,18 +160,18 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="auto">Auto-detect</SelectItem>
-                    <SelectItem value="Pro">Claude Pro (7,000 tokens/day)</SelectItem>
-                    <SelectItem value="Max5">Claude Max5 (35,000 tokens/day)</SelectItem>
-                    <SelectItem value="Max20">Claude Max20 (140,000 tokens/day)</SelectItem>
-                    <SelectItem value="Custom">Custom</SelectItem>
+                    <SelectItem value="auto">{t('settingsPanel.autoDetect')}</SelectItem>
+                    <SelectItem value="Pro">{t('settingsPanel.claudePro')}</SelectItem>
+                    <SelectItem value="Max5">{t('settingsPanel.claudeMax5')}</SelectItem>
+                    <SelectItem value="Max20">{t('settingsPanel.claudeMax20')}</SelectItem>
+                    <SelectItem value="Custom">{t('settingsPanel.custom')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {preferences.plan === 'Custom' && (
                 <div>
-                  <div className="text-white/70 text-sm mb-2">Custom Token Limit</div>
+                  <div className="text-white/70 text-sm mb-2">{t('settingsPanel.customTokenLimit')}</div>
                   <input
                     type="number"
                     min="1000"
@@ -183,18 +185,18 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                       )
                     }
                     className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder:text-white/50 focus:border-blue-500 focus:outline-none"
-                    placeholder="Enter custom token limit"
+                    placeholder={t('settingsPanel.enterCustomTokenLimit')}
                   />
-                  <div className="text-white/50 text-xs mt-1">Tokens per day</div>
+                  <div className="text-white/50 text-xs mt-1">{t('settingsPanel.tokensPerDay')}</div>
                 </div>
               )}
 
               <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
                 <div className="text-green-300 text-sm">
                   <span className="text-lg mr-2">ℹ️</span>
-                  Current detected plan: <span className="font-medium">{stats.currentPlan}</span>
+                  {t('settingsPanel.currentDetectedPlan')} <span className="font-medium">{stats.currentPlan}</span>
                   {stats.tokenLimit && (
-                    <span className="ml-2">({stats.tokenLimit.toLocaleString()} tokens/day)</span>
+                    <span className="ml-2">({stats.tokenLimit.toLocaleString()} {t('settingsPanel.tokensPerDay')})</span>
                   )}
                 </div>
               </div>
@@ -206,16 +208,16 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <div className="flex items-center space-x-3">
               <span className="text-2xl">📊</span>
               <div>
-                <div className="text-white font-medium">Menu Bar Display</div>
+                <div className="text-white font-medium">{t('settingsPanel.menuBarDisplay')}</div>
                 <div className="text-white/60 text-sm">
-                  Choose how information is displayed in the menu bar
+                  {t('settingsPanel.menuBarDisplayDescription')}
                 </div>
               </div>
             </div>
 
             <div className="ml-11 space-y-3">
               <div>
-                <div className="text-white/70 text-sm mb-2">Display Mode</div>
+                <div className="text-white/70 text-sm mb-2">{t('settingsPanel.displayMode')}</div>
                 <Select
                   value={preferences.menuBarDisplayMode || 'alternate'}
                   onValueChange={(value: 'percentage' | 'cost' | 'alternate') =>
@@ -223,12 +225,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   }
                 >
                   <SelectTrigger className="w-full bg-white/5 border-white/10 text-white hover:bg-white/10">
-                    <SelectValue placeholder="Select display mode" />
+                    <SelectValue placeholder={t('settingsPanel.selectDisplayMode')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="percentage">Percentage Only</SelectItem>
-                    <SelectItem value="cost">Cost Only</SelectItem>
-                    <SelectItem value="alternate">Alternate (switch every 3s)</SelectItem>
+                    <SelectItem value="percentage">{t('settingsPanel.percentageOnly')}</SelectItem>
+                    <SelectItem value="cost">{t('settingsPanel.costOnly')}</SelectItem>
+                    <SelectItem value="alternate">{t('settingsPanel.alternateMode')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -237,16 +239,14 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <div className="text-blue-300 text-sm">
                   <span className="text-lg mr-2">💡</span>
                   {preferences.menuBarDisplayMode === 'percentage' && (
-                    <span>Menu bar will show usage percentage only (e.g., 75%)</span>
+                    <span>{t('settingsPanel.percentageHint')}</span>
                   )}
                   {preferences.menuBarDisplayMode === 'cost' && (
-                    <span>
-                      Menu bar will show total cost only (e.g., $1.25. Basis configurable below)
-                    </span>
+                    <span>{t('settingsPanel.costHint')}</span>
                   )}
                   {(!preferences.menuBarDisplayMode ||
                     preferences.menuBarDisplayMode === 'alternate') && (
-                    <span>Menu bar will alternate between percentage and cost every 3 seconds</span>
+                    <span>{t('settingsPanel.alternateHint')}</span>
                   )}
                 </div>
               </div>
@@ -254,7 +254,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               {/* Cost Basis for Menu Bar (hidden when Percentage Only is selected) */}
               {preferences.menuBarDisplayMode !== 'percentage' && (
                 <div>
-                  <div className="text-white/70 text-sm mb-2">Cost Basis</div>
+                  <div className="text-white/70 text-sm mb-2">{t('settingsPanel.costBasis')}</div>
                   <Select
                     value={preferences.menuBarCostSource || 'today'}
                     onValueChange={(value: 'today' | 'sessionWindow') =>
@@ -262,16 +262,15 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     }
                   >
                     <SelectTrigger className="w-full bg-white/5 border-white/10 text-white hover:bg-white/10">
-                      <SelectValue placeholder="Select cost basis" />
+                      <SelectValue placeholder={t('settingsPanel.selectCostBasis')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="today">Today (daily total)</SelectItem>
-                      <SelectItem value="sessionWindow">Current session window (5h)</SelectItem>
+                      <SelectItem value="today">{t('settingsPanel.todayDaily')}</SelectItem>
+                      <SelectItem value="sessionWindow">{t('settingsPanel.sessionWindow5h')}</SelectItem>
                     </SelectContent>
                   </Select>
                   <div className="text-white/50 text-xs mt-2">
-                    When set to Current session window, the menu bar cost reflects the rolling
-                    5-hour session window instead of today's total.
+                    {t('settingsPanel.costBasisDescription')}
                   </div>
                 </div>
               )}

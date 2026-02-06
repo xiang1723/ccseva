@@ -1,10 +1,12 @@
 import { Camera } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Analytics } from './components/Analytics';
 import { Dashboard } from './components/Dashboard';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { LanguageSelector } from './components/LanguageSelector';
 import { LoadingScreen } from './components/LoadingScreen';
 import { NavigationTabs } from './components/NavigationTabs';
 import { SettingsPanel } from './components/SettingsPanel';
@@ -39,6 +41,7 @@ interface AppState {
 }
 
 const App: React.FC = () => {
+  const { t } = useTranslation();
   const [state, setState] = useState<AppState>({
     currentView: 'dashboard',
     stats: null,
@@ -87,8 +90,8 @@ const App: React.FC = () => {
       console.error('Error saving settings:', error);
       addNotification({
         type: 'error',
-        title: 'Settings Save Failed',
-        message: 'Could not save settings to local storage',
+        title: t('error.settingsSaveFailed'),
+        message: t('error.settingsSaveFailedMessage'),
       });
     }
   }, []);
@@ -117,8 +120,8 @@ const App: React.FC = () => {
       if (!showLoading) {
         addNotification({
           type: 'success',
-          title: 'Data Refreshed',
-          message: 'Usage statistics updated successfully',
+          title: t('notification.dataRefreshed'),
+          message: t('notification.dataRefreshedMessage'),
         });
       }
     } catch (err) {
@@ -132,7 +135,7 @@ const App: React.FC = () => {
 
       addNotification({
         type: 'error',
-        title: 'Update Failed',
+        title: t('error.updateFailed'),
         message: errorMessage,
       });
     }
@@ -152,8 +155,8 @@ const App: React.FC = () => {
       setState((prev) => ({ ...prev, stats: data }));
       addNotification({
         type: 'success',
-        title: 'Data Refreshed',
-        message: 'Latest usage data loaded',
+        title: t('notification.dataRefreshed'),
+        message: t('notification.latestDataLoaded'),
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to refresh data';
@@ -162,7 +165,7 @@ const App: React.FC = () => {
 
       addNotification({
         type: 'error',
-        title: 'Refresh Failed',
+        title: t('error.refreshFailed'),
         message: errorMessage,
       });
     }
@@ -178,19 +181,19 @@ const App: React.FC = () => {
       const result = await window.electronAPI.takeScreenshot();
 
       if (result.success) {
-        toast.success('Screenshot captured!', {
+        toast.success(t('notification.screenshotCaptured'), {
           description: result.message,
           duration: 4000,
         });
       } else {
-        toast.error('Screenshot failed', {
+        toast.error(t('error.screenshotFailed'), {
           description: result.error || 'Unknown error occurred',
           duration: 4000,
         });
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to take screenshot';
-      toast.error('Screenshot failed', {
+      toast.error(t('error.screenshotFailed'), {
         description: errorMessage,
         duration: 4000,
       });
@@ -343,11 +346,11 @@ const App: React.FC = () => {
   };
 
   const formatTimeRemaining = (burnRate: number, tokensRemaining: number): string => {
-    if (burnRate <= 0) return 'Unlimited';
+    if (burnRate <= 0) return t('usage.unlimited');
     const hoursRemaining = tokensRemaining / burnRate;
-    if (hoursRemaining < 1) return `${Math.round(hoursRemaining * 60)}m remaining`;
-    if (hoursRemaining < 24) return `${Math.round(hoursRemaining)}h remaining`;
-    return `${Math.round(hoursRemaining / 24)}d remaining`;
+    if (hoursRemaining < 1) return t('usage.minutesRemaining', { minutes: Math.round(hoursRemaining * 60) });
+    if (hoursRemaining < 24) return t('usage.hoursRemaining', { hours: Math.round(hoursRemaining) });
+    return t('usage.daysRemaining', { days: Math.round(hoursRemaining / 24) });
   };
 
   // Render loading screen
@@ -380,13 +383,13 @@ const App: React.FC = () => {
                 />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-white mb-4">Connection Error</h2>
+            <h2 className="text-xl font-bold text-white mb-4">{t('error.connectionError')}</h2>
             <p className="text-neutral-300 mb-6">{state.error}</p>
             <Button
               onClick={() => loadUsageStats()}
               className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/20 transition-all duration-200"
             >
-              Try Again
+              {t('error.tryAgain')}
             </Button>
           </div>
         </div>
@@ -435,12 +438,13 @@ const App: React.FC = () => {
                     </svg>
                   </div>
                   <div>
-                    <h1 className="text-lg font-bold text-gradient mb-1">CCSeva</h1>
-                    <p className="text-xs text-neutral-400">Track API usage</p>
+                    <h1 className="text-lg font-bold text-gradient mb-1">{t('app.title')}</h1>
+                    <p className="text-xs text-neutral-400">{t('app.subtitle')}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
+                  <LanguageSelector />
                   <div className="glass px-2 py-1 rounded-lg">
                     <span className="text-xs text-neutral-300">
                       {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -452,7 +456,7 @@ const App: React.FC = () => {
                     variant="ghost"
                     size="icon"
                     className="p-1 hover:bg-white/10 hover:scale-105 transition-all duration-200"
-                    title="Refresh Data (⌘R)"
+                    title={`${t('header.refreshData')} (${t('shortcuts.refreshData')})`}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
@@ -469,7 +473,7 @@ const App: React.FC = () => {
                     variant="ghost"
                     size="icon"
                     className="p-1 hover:bg-white/10 hover:scale-105 transition-all duration-200"
-                    title="Take Screenshot (⌘⇧S)"
+                    title={`${t('header.takeScreenshot')} (${t('shortcuts.takeScreenshot')})`}
                   >
                     <Camera className="w-4 h-4" />
                   </Button>
@@ -479,7 +483,7 @@ const App: React.FC = () => {
                     variant="ghost"
                     size="icon"
                     className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 hover:scale-105 transition-all duration-200"
-                    title="Quit Application (⌘Q)"
+                    title={`${t('header.quitApp')} (${t('shortcuts.quitApp')})`}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path

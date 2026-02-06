@@ -1,5 +1,6 @@
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { UsageStats } from '../types/usage';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -31,25 +32,25 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-const getDepletionText = (stats: UsageStats) => {
-  if (!stats.predictedDepleted || stats.burnRate <= 0) return 'No depletion';
+const getDepletionText = (stats: UsageStats, t: (key: string, options?: Record<string, unknown>) => string) => {
+  if (!stats.predictedDepleted || stats.burnRate <= 0) return t('analytics.noDepletion');
 
   try {
     const depletionDate = new Date(stats.predictedDepleted);
-    if (Number.isNaN(depletionDate.getTime())) return 'No depletion';
+    if (Number.isNaN(depletionDate.getTime())) return t('analytics.noDepletion');
 
     const now = new Date();
     const diffTime = depletionDate.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 0) return 'Already depleted';
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Tomorrow';
-    if (diffDays < 7) return `${diffDays} days`;
-    if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks`;
-    return `${Math.ceil(diffDays / 30)} months`;
+    if (diffDays < 0) return t('analytics.alreadyDepleted');
+    if (diffDays === 0) return t('analytics.depletionToday');
+    if (diffDays === 1) return t('analytics.depletionTomorrow');
+    if (diffDays < 7) return t('analytics.depletionDays', { count: diffDays });
+    if (diffDays < 30) return t('analytics.depletionWeeks', { count: Math.ceil(diffDays / 7) });
+    return t('analytics.depletionMonths', { count: Math.ceil(diffDays / 30) });
   } catch {
-    return 'No depletion';
+    return t('analytics.noDepletion');
   }
 };
 
@@ -61,108 +62,112 @@ const ControlTabs: React.FC<{
   setChartType: (type: ChartType) => void;
   selectedMetric: 'tokens' | 'cost';
   setSelectedMetric: (metric: 'tokens' | 'cost') => void;
-}> = ({ timeRange, setTimeRange, chartType, setChartType, selectedMetric, setSelectedMetric }) => (
-  <div className="flex flex-wrap gap-3 mb-5">
-    {/* Time Range */}
-    <div className="flex bg-neutral-800/50 rounded-xl p-1 backdrop-blur-sm border border-white/10">
-      {(['7d', '30d'] as ChartTimeRange[]).map((range) => (
-        <Button
-          key={range}
-          onClick={() => setTimeRange(range)}
-          variant="ghost"
-          size="sm"
-          className={`px-3 py-1.5 h-auto rounded-lg text-sm font-medium transition-all ${
-            timeRange === range
-              ? 'bg-blue-500 text-white shadow-lg hover:bg-blue-600'
-              : 'text-neutral-400 hover:text-white hover:bg-white/5'
-          }`}
-        >
-          <svg
-            className="w-4 h-4 inline mr-1.5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+}> = ({ timeRange, setTimeRange, chartType, setChartType, selectedMetric, setSelectedMetric }) => {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex flex-wrap gap-3 mb-5">
+      {/* Time Range */}
+      <div className="flex bg-neutral-800/50 rounded-xl p-1 backdrop-blur-sm border border-white/10">
+        {(['7d', '30d'] as ChartTimeRange[]).map((range) => (
+          <Button
+            key={range}
+            onClick={() => setTimeRange(range)}
+            variant="ghost"
+            size="sm"
+            className={`px-3 py-1.5 h-auto rounded-lg text-sm font-medium transition-all ${
+              timeRange === range
+                ? 'bg-blue-500 text-white shadow-lg hover:bg-blue-600'
+                : 'text-neutral-400 hover:text-white hover:bg-white/5'
+            }`}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
-          {range === '7d' ? '7 Days' : '30 Days'}
-        </Button>
-      ))}
-    </div>
+            <svg
+              className="w-4 h-4 inline mr-1.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+            {range === '7d' ? t('analytics.sevenDays') : t('analytics.thirtyDays')}
+          </Button>
+        ))}
+      </div>
 
-    {/* Chart Type */}
-    <div className="flex bg-neutral-800/50 rounded-xl p-1 backdrop-blur-sm border border-white/10">
-      {(
-        [
-          {
-            type: 'area',
-            label: 'Area',
-            icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9',
-          },
-          { type: 'line', label: 'Line', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
-          {
-            type: 'bar',
-            label: 'Bar',
-            icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10',
-          },
-        ] as { type: ChartType; label: string; icon: string }[]
-      ).map(({ type, label, icon }) => (
-        <Button
-          key={type}
-          onClick={() => setChartType(type)}
-          variant="ghost"
-          size="sm"
-          className={`px-3 py-1.5 h-auto rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-            chartType === type
-              ? 'bg-purple-500 text-white shadow-lg hover:bg-purple-600'
-              : 'text-neutral-400 hover:text-white hover:bg-white/5'
-          }`}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
-          </svg>
-          {label}
-        </Button>
-      ))}
-    </div>
+      {/* Chart Type */}
+      <div className="flex bg-neutral-800/50 rounded-xl p-1 backdrop-blur-sm border border-white/10">
+        {(
+          [
+            {
+              type: 'area',
+              labelKey: 'analytics.area',
+              icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9',
+            },
+            { type: 'line', labelKey: 'analytics.line', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
+            {
+              type: 'bar',
+              labelKey: 'analytics.bar',
+              icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10',
+            },
+          ] as { type: ChartType; labelKey: string; icon: string }[]
+        ).map(({ type, labelKey, icon }) => (
+          <Button
+            key={type}
+            onClick={() => setChartType(type)}
+            variant="ghost"
+            size="sm"
+            className={`px-3 py-1.5 h-auto rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+              chartType === type
+                ? 'bg-purple-500 text-white shadow-lg hover:bg-purple-600'
+                : 'text-neutral-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
+            </svg>
+            {t(labelKey)}
+          </Button>
+        ))}
+      </div>
 
-    {/* Metric Toggle */}
-    <div className="flex bg-neutral-800/50 rounded-xl p-1 backdrop-blur-sm border border-white/10">
-      {(
-        [
-          { metric: 'tokens', label: 'Tokens', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
-          {
-            metric: 'cost',
-            label: 'Cost',
-            icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1',
-          },
-        ] as { metric: 'tokens' | 'cost'; label: string; icon: string }[]
-      ).map(({ metric, label, icon }) => (
-        <Button
-          key={metric}
-          onClick={() => setSelectedMetric(metric)}
-          variant="ghost"
-          size="sm"
-          className={`px-3 py-1.5 h-auto rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-            selectedMetric === metric
-              ? 'bg-emerald-500 text-white shadow-lg hover:bg-emerald-600'
-              : 'text-neutral-400 hover:text-white hover:bg-white/5'
-          }`}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
-          </svg>
-          {label}
-        </Button>
-      ))}
+      {/* Metric Toggle */}
+      <div className="flex bg-neutral-800/50 rounded-xl p-1 backdrop-blur-sm border border-white/10">
+        {(
+          [
+            { metric: 'tokens', labelKey: 'analytics.tokens', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
+            {
+              metric: 'cost',
+              labelKey: 'analytics.cost',
+              icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1',
+            },
+          ] as { metric: 'tokens' | 'cost'; labelKey: string; icon: string }[]
+        ).map(({ metric, labelKey, icon }) => (
+          <Button
+            key={metric}
+            onClick={() => setSelectedMetric(metric)}
+            variant="ghost"
+            size="sm"
+            className={`px-3 py-1.5 h-auto rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+              selectedMetric === metric
+                ? 'bg-emerald-500 text-white shadow-lg hover:bg-emerald-600'
+                : 'text-neutral-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
+            </svg>
+            {t(labelKey)}
+          </Button>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Summary stats component
 const SummaryStats: React.FC<{
@@ -170,36 +175,40 @@ const SummaryStats: React.FC<{
   totalWeekCost: number;
   avgDailyTokens: number;
   avgDailyCost: number;
-}> = ({ totalWeekTokens, totalWeekCost, avgDailyTokens, avgDailyCost }) => (
-  <div className="grid grid-cols-4 gap-3">
-    <Card className="bg-neutral-900/50 border-neutral-800">
-      <CardContent className="p-3 text-center">
-        <div className="text-xl font-bold text-white mb-1">{formatNumber(totalWeekTokens)}</div>
-        <div className="text-xs text-neutral-400">Total Tokens (7d)</div>
-      </CardContent>
-    </Card>
-    <Card className="bg-neutral-900/50 border-neutral-800">
-      <CardContent className="p-3 text-center">
-        <div className="text-xl font-bold text-white mb-1">{formatCurrency(totalWeekCost)}</div>
-        <div className="text-xs text-neutral-400">Total Cost (7d)</div>
-      </CardContent>
-    </Card>
-    <Card className="bg-neutral-900/50 border-neutral-800">
-      <CardContent className="p-3 text-center">
-        <div className="text-xl font-bold text-white mb-1">
-          {formatNumber(Math.round(avgDailyTokens))}
-        </div>
-        <div className="text-xs text-neutral-400">Avg Daily Tokens</div>
-      </CardContent>
-    </Card>
-    <Card className="bg-neutral-900/50 border-neutral-800">
-      <CardContent className="p-3 text-center">
-        <div className="text-xl font-bold text-white mb-1">{formatCurrency(avgDailyCost)}</div>
-        <div className="text-xs text-neutral-400">Avg Daily Cost</div>
-      </CardContent>
-    </Card>
-  </div>
-);
+}> = ({ totalWeekTokens, totalWeekCost, avgDailyTokens, avgDailyCost }) => {
+  const { t } = useTranslation();
+
+  return (
+    <div className="grid grid-cols-4 gap-3">
+      <Card className="bg-neutral-900/50 border-neutral-800">
+        <CardContent className="p-3 text-center">
+          <div className="text-xl font-bold text-white mb-1">{formatNumber(totalWeekTokens)}</div>
+          <div className="text-xs text-neutral-400">{t('analytics.totalTokens7d')}</div>
+        </CardContent>
+      </Card>
+      <Card className="bg-neutral-900/50 border-neutral-800">
+        <CardContent className="p-3 text-center">
+          <div className="text-xl font-bold text-white mb-1">{formatCurrency(totalWeekCost)}</div>
+          <div className="text-xs text-neutral-400">{t('analytics.totalCost7d')}</div>
+        </CardContent>
+      </Card>
+      <Card className="bg-neutral-900/50 border-neutral-800">
+        <CardContent className="p-3 text-center">
+          <div className="text-xl font-bold text-white mb-1">
+            {formatNumber(Math.round(avgDailyTokens))}
+          </div>
+          <div className="text-xs text-neutral-400">{t('analytics.avgDailyTokens')}</div>
+        </CardContent>
+      </Card>
+      <Card className="bg-neutral-900/50 border-neutral-800">
+        <CardContent className="p-3 text-center">
+          <div className="text-xl font-bold text-white mb-1">{formatCurrency(avgDailyCost)}</div>
+          <div className="text-xs text-neutral-400">{t('analytics.avgDailyCost')}</div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
 // Hook for chart data processing
 const useChartData = (stats: UsageStats, timeRange: ChartTimeRange) => {
@@ -314,6 +323,8 @@ const MainChart: React.FC<{
   chartDimensions: { width: number; height: number };
   chartContainerRef: React.RefObject<HTMLDivElement | null>;
 }> = ({ chartData, chartType, selectedMetric, timeRange, chartDimensions, chartContainerRef }) => {
+  const { t } = useTranslation();
+
   const maxValue = useMemo(() => {
     if (chartData.length === 0) return 1;
     const values = chartData.map((d) =>
@@ -345,17 +356,17 @@ const MainChart: React.FC<{
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-bold text-white mb-1">
-              {selectedMetric === 'tokens' ? 'Token Usage' : 'Cost'} Trends
+              {selectedMetric === 'tokens' ? t('analytics.tokenTrends') : t('analytics.costTrends')}
             </h3>
             <p className="text-sm text-neutral-400">
-              {timeRange === '7d' ? 'Last 7 days' : 'Last 30 days'} • {chartType} visualization
+              {timeRange === '7d' ? t('analytics.last7days') : t('analytics.last30days')} • {chartType} {t('analytics.visualization')}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <div className="glass px-3 py-1 rounded-lg">
               <span className="text-xs text-neutral-300">
-                Max:{' '}
+                {t('analytics.max')}{' '}
                 {selectedMetric === 'tokens' ? formatNumber(maxValue) : formatCurrency(maxValue)}
               </span>
             </div>
@@ -533,7 +544,7 @@ const MainChart: React.FC<{
                     d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                   />
                 </svg>
-                <p className="text-sm">No data available</p>
+                <p className="text-sm">{t('analytics.noData')}</p>
               </div>
             </div>
           )}
@@ -544,6 +555,7 @@ const MainChart: React.FC<{
 };
 
 export const Analytics: React.FC<AnalyticsProps> = ({ stats }) => {
+  const { t } = useTranslation();
   const [timeRange, setTimeRange] = useState<ChartTimeRange>('7d');
   const [chartType, setChartType] = useState<ChartType>('area');
   const [selectedMetric, setSelectedMetric] = useState<'tokens' | 'cost'>('tokens');
@@ -565,9 +577,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats }) => {
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h2 className="text-xl font-bold text-gradient mb-1">Usage Analytics</h2>
+                <h2 className="text-xl font-bold text-gradient mb-1">{t('analytics.title')}</h2>
                 <p className="text-sm text-neutral-400">
-                  Deep insights into your API consumption patterns
+                  {t('analytics.description')}
                 </p>
               </div>
 
@@ -575,7 +587,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats }) => {
                 <div className="glass px-3 py-1 rounded-lg">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                    <span className="text-xs text-neutral-300">Live Data</span>
+                    <span className="text-xs text-neutral-300">{t('analytics.liveData')}</span>
                   </div>
                 </div>
               </div>
@@ -615,13 +627,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats }) => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-white">Model Distribution</CardTitle>
-                  <CardDescription>Today's usage by AI model</CardDescription>
+                  <CardTitle className="text-white">{t('analytics.modelDistribution')}</CardTitle>
+                  <CardDescription>{t('analytics.todayByModel')}</CardDescription>
                 </div>
 
                 <div className="bg-neutral-800/50 px-3 py-1 rounded-lg border border-neutral-700">
                   <span className="text-xs text-neutral-300">
-                    {modelBreakdownData.length} models
+                    {t('analytics.modelsCount', { count: modelBreakdownData.length })}
                   </span>
                 </div>
               </div>
@@ -679,7 +691,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats }) => {
                         <div className="text-xl font-bold text-white">
                           {formatNumber(stats.today.totalTokens)}
                         </div>
-                        <div className="text-xs text-neutral-400">tokens</div>
+                        <div className="text-xs text-neutral-400">{t('analytics.tokensUnit')}</div>
                       </div>
                     </div>
                   </div>
@@ -699,7 +711,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats }) => {
                           <div>
                             <div className="text-base font-bold text-white">{model.name}</div>
                             <div className="text-sm text-neutral-400">
-                              {model.percentage.toFixed(1)}% usage
+                              {t('analytics.usagePercent', { percentage: model.percentage.toFixed(1) })}
                             </div>
                           </div>
                         </div>
@@ -731,7 +743,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats }) => {
                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                     />
                   </svg>
-                  <p className="text-sm">No model usage data available</p>
+                  <p className="text-sm">{t('analytics.noModelData')}</p>
                 </div>
               )}
             </CardContent>
@@ -740,8 +752,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats }) => {
           {/* Performance Metrics */}
           <Card className="bg-neutral-900/80 backdrop-blur-sm border-neutral-800">
             <CardHeader>
-              <CardTitle className="text-white">Performance Metrics</CardTitle>
-              <CardDescription>Key insights and efficiency indicators</CardDescription>
+              <CardTitle className="text-white">{t('analytics.performanceMetrics')}</CardTitle>
+              <CardDescription>{t('analytics.keyInsights')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
@@ -774,12 +786,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats }) => {
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>
-                                Rate of token consumption per hour based on your last 24 hours of
-                                usage
+                                {t('analytics.burnRateTooltip')}
                               </p>
                             </TooltipContent>
                           </Tooltip>
-                          <div className="text-sm text-neutral-400">Burn Rate</div>
+                          <div className="text-sm text-neutral-400">{t('analytics.burnRate')}</div>
                         </div>
                       </div>
 
@@ -793,14 +804,14 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats }) => {
                         }`}
                       >
                         {stats.burnRate > 1000
-                          ? 'High'
+                          ? t('analytics.high')
                           : stats.burnRate > 500
-                            ? 'Moderate'
-                            : 'Normal'}
+                            ? t('analytics.moderate')
+                            : t('analytics.normal')}
                       </div>
                     </div>
 
-                    <div className="text-xs text-neutral-400 mb-2">tokens per hour</div>
+                    <div className="text-xs text-neutral-400 mb-2">{t('analytics.tokensPerHour')}</div>
                     <div className="w-full bg-neutral-800 rounded-full h-2">
                       <div
                         className={`h-2 rounded-full transition-all duration-1000 ${
@@ -844,15 +855,15 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats }) => {
                               </div>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Percentage of your daily token limit currently used</p>
+                              <p>{t('analytics.efficiencyTooltip')}</p>
                             </TooltipContent>
                           </Tooltip>
-                          <div className="text-sm text-neutral-400">Efficiency</div>
+                          <div className="text-sm text-neutral-400">{t('analytics.efficiency')}</div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="text-xs text-neutral-400 mb-2">plan utilization</div>
+                    <div className="text-xs text-neutral-400 mb-2">{t('analytics.planUtilization')}</div>
                     <div className="w-full bg-neutral-800 rounded-full h-2">
                       <div
                         className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-1000"
@@ -886,22 +897,21 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats }) => {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div className="text-xl font-bold text-white cursor-help">
-                                {getDepletionText(stats)}
+                                {getDepletionText(stats, t)}
                               </div>
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>
-                                Estimated time until your daily token limit is reached at current
-                                usage rate
+                                {t('analytics.depletionTooltip')}
                               </p>
                             </TooltipContent>
                           </Tooltip>
-                          <div className="text-sm text-neutral-400">Depletion</div>
+                          <div className="text-sm text-neutral-400">{t('analytics.depletion')}</div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="text-xs text-neutral-400">at current burn rate</div>
+                    <div className="text-xs text-neutral-400">{t('analytics.atCurrentBurnRate')}</div>
                   </CardContent>
                 </Card>
 
@@ -933,12 +943,12 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats }) => {
                                 )
                               : '$0.000'}
                           </div>
-                          <div className="text-sm text-neutral-400">Avg Cost</div>
+                          <div className="text-sm text-neutral-400">{t('analytics.avgCost')}</div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="text-xs text-neutral-400">per 1,000 tokens</div>
+                    <div className="text-xs text-neutral-400">{t('analytics.perThousandTokens')}</div>
                   </CardContent>
                 </Card>
               </div>
